@@ -1,5 +1,6 @@
 const SUPABASE_URL = 'https://jgdvbsmyhrpnaqtbneug.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_VYW_Y-d8BItFm9A2QZ2Jwg_BHGN2Yos';
+const STORAGE_BUCKET = 'listing-images';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATEGORIES = {
@@ -183,18 +184,24 @@ function renderListings() {
     return matchesQuery && matchesRegion && matchesCategory;
   });
 
-  $('#resultLabel').textContent = visible.length ? `${visible.length} result${visible.length === 1 ? '' : 's'}` : '';
+  const sortedVisible = [...visible].sort((a, b) => {
+    if (Number(b.is_featured) !== Number(a.is_featured)) return Number(b.is_featured) - Number(a.is_featured);
+    return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+  });
 
-  if (!visible.length) {
+  const featured = sortedVisible.filter((item) => item.is_featured);
+
+  $('#resultLabel').textContent = sortedVisible.length ? `${sortedVisible.length} result${sortedVisible.length === 1 ? '' : 's'}` : '';
+
+  if (!sortedVisible.length) {
     const emptyText = q || r || c
       ? (lang === 'fr' ? 'Aucun résultat trouvé' : 'No results found')
       : (lang === 'fr' ? 'Aucune annonce pour le moment' : 'No listings yet. Be the first to post!');
     $('#listingGrid').innerHTML = empty(emptyText, q || r || c ? 'Try another search or filter.' : '');
   } else {
-    $('#listingGrid').innerHTML = visible.map(card).join('');
+    $('#listingGrid').innerHTML = sortedVisible.map(card).join('');
   }
 
-  const featured = visible.filter((item) => item.is_featured);
   $('#featuredGrid').innerHTML = featured.length
     ? featured.map(card).join('')
     : empty(lang === 'fr' ? 'Aucune annonce à la une' : 'No featured ads yet', 'Featured ads appear after payment verification and admin approval.');
@@ -203,9 +210,9 @@ function renderListings() {
     element.onclick = () => detail(items.find((item) => item.id === element.dataset.id));
   });
 
-  $('#liveCount').textContent = visible.length;
-  $('#sellerCount').textContent = new Set(visible.map((item) => item.seller_id)).size;
-  $('#regionCount').textContent = new Set(visible.map((item) => item.region).filter(Boolean)).size;
+  $('#liveCount').textContent = sortedVisible.length;
+  $('#sellerCount').textContent = new Set(sortedVisible.map((item) => item.seller_id)).size;
+  $('#regionCount').textContent = new Set(sortedVisible.map((item) => item.region).filter(Boolean)).size;
 }
 
 async function fetchProfile(userId) {
@@ -255,6 +262,12 @@ async function updateListingStatus(id, nextStatus) {
 }
 
 async function toggleFeatured(id, nextValue) {
+  const listing = items.find((item) => item.id === id);
+  if (nextValue && listing && listing.status !== 'approved') {
+    toast('Approve this listing before marking it as featured.');
+    return;
+  }
+
   const { error } = await db.from('listings').update({ is_featured: nextValue }).eq('id', id);
   if (error) {
     console.error(error);
