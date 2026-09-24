@@ -308,6 +308,14 @@ function auth(mode = 'login') {
       if (result.error) throw result.error;
       user = result.data.user;
       profile = await fetchProfile(user.id);
+      if (!profile && mode === 'register') {
+        await db.from('profiles').upsert({
+          id: user.id,
+          full_name: payload.full_name,
+          phone: payload.phone
+        }, { onConflict: 'id' });
+        profile = { id: user.id, full_name: payload.full_name, phone: payload.phone };
+      }
       close();
       translate();
       toast(mode === 'login' ? 'Logged in successfully.' : 'Account created successfully.');
@@ -315,6 +323,51 @@ function auth(mode = 'login') {
     } catch (error) {
       console.error(error);
       toast(error.message || 'Authentication error.');
+    }
+  };
+}
+
+async function saveProfile(nextProfile) {
+  const payload = {
+    id: user.id,
+    full_name: nextProfile.full_name,
+    phone: nextProfile.phone
+  };
+
+  const { error } = await db.from('profiles').upsert(payload, { onConflict: 'id' });
+  if (error) throw error;
+
+  profile = { ...profile, ...payload };
+}
+
+function editProfile() {
+  const fullName = profile?.full_name || '';
+  const phone = profile?.phone || '';
+
+  open(`
+    <h2>Edit your profile</h2>
+    <form id="profileForm" class="form-grid">
+      <div class="field"><label>Full name</label><input name="full_name" value="${esc(fullName)}" required></div>
+      <div class="field"><label>WhatsApp / Phone</label><input name="phone" value="${esc(phone)}" required></div>
+      <button class="button">Save profile</button>
+    </form>
+  `);
+
+  $('#profileForm').onsubmit = async (event) => {
+    event.preventDefault();
+    const payload = Object.fromEntries(new FormData(event.target));
+
+    try {
+      await saveProfile({
+        full_name: payload.full_name,
+        phone: payload.phone
+      });
+      close();
+      toast('Profile updated successfully.');
+      accountPanel();
+    } catch (error) {
+      console.error(error);
+      toast(error.message || 'Could not update profile.');
     }
   };
 }
@@ -349,11 +402,13 @@ function accountPanel() {
     <p class="lead">${esc(profile?.full_name || user.email)}</p>
     <div class="notice">${esc(user.email)}<br>${esc(profile?.phone || '')}</div>
     <p class="muted">Your registered phone is used for seller contact and is never shown publicly on listings.</p>
+    <button class="button" id="editProfile">Edit profile</button>
     <button class="button danger" id="logout">Logout</button>
     ${adminButton}
   `);
 
   $('#logout').onclick = logout;
+  $('#editProfile').onclick = editProfile;
 }
 
 function locationFields() {
