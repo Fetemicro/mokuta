@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://jgdvbsmyhrpnaqtbneug.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_VYW_Y-d8BItFm9A2QZ2Jwg_BHGN2Yos';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnZHZic215aHJwbmFxdGJuZXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMDY1NjAsImV4cCI6MjEwNTc4MjU2MH0.iGsuUaXGJo[...]
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATEGORIES = {
@@ -28,7 +28,7 @@ const REGIONS = {
   'North-West': ['Boyo', 'Bui', 'Donga-Mantung', 'Menchum', 'Mezam', 'Momo', 'Ngoketunjia'],
   South: ['Dja-et-Lobo', 'Mvila', 'Océan', 'Vallée-du-Ntem'],
   'South-West': ['Fako', 'Koupé-Manengouba', 'Lebialem', 'Manyu', 'Meme', 'Ndian'],
-  West: ['Bamboutos', 'Haut-Knam', 'Hauts-Plateaux', 'Koung-Khi', 'Menoua', 'Mifi', 'Ndé', 'Noun']
+  West: ['Bamboutos', 'Haut-Nkam', 'Hauts-Plateaux', 'Koung-Khi', 'Menoua', 'Mifi', 'Ndé', 'Noun']
 };
 
 const T = {
@@ -92,6 +92,12 @@ const open = (html) => {
 const close = () => $('#modalBackdrop').classList.remove('open');
 
 const price = (value) => value ? `${new Intl.NumberFormat('fr-FR').format(Number(value))} FCFA` : 'Price on request';
+
+function isAdminUser() {
+  if (!user) return false;
+  const role = user.app_metadata?.role || profile?.role;
+  return role === 'admin';
+}
 
 function empty(title, desc = '') {
   return `<div class="empty-state"><strong>${esc(title)}</strong><span>${esc(desc)}</span></div>`;
@@ -217,74 +223,6 @@ async function checkSession() {
   translate();
 }
 
-function isAdminUser() {
-  if (!user) return false;
-  const roleFromMeta = user.app_metadata?.role || profile?.role;
-  return roleFromMeta === 'admin';
-}
-
-async function updateListingStatus(id, nextStatus) {
-  const { error } = await db.from('listings').update({ status: nextStatus }).eq('id', id);
-  if (error) {
-    console.error(error);
-    toast(error.message || 'Could not update listing status.');
-    return;
-  }
-  toast(`Listing ${nextStatus}.`);
-  await loadListings();
-  await adminDashboard();
-}
-
-async function adminDashboard() {
-  if (!isAdminUser()) {
-    toast('Admin access required.');
-    return;
-  }
-
-  open(`
-    <h2>Admin dashboard</h2>
-    <p class="lead">Moderate product listings before they go live.</p>
-    <div id="adminQueue"></div>
-  `);
-
-  const queue = $('#adminQueue');
-  const { data, error } = await db.from('listings').select('*').in('status', ['pending', 'rejected']).order('created_at', { ascending: false });
-
-  if (error) {
-    console.error(error);
-    queue.innerHTML = empty('Could not load listings', 'Please refresh and try again.');
-    return;
-  }
-
-  const rows = data || [];
-
-  if (!rows.length) {
-    queue.innerHTML = empty('No pending listings', 'New submissions will appear here.');
-    return;
-  }
-
-  queue.innerHTML = rows.map((item) => `
-    <div class="admin-item" style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e5e7eb;align-items:center;">
-      <div style="min-width:0;">
-        <strong>${esc(item.title)}</strong><br>
-        <span style="font-size:12px;color:#667085;">${esc(item.category)} · ${esc(item.region || item.location || 'Cameroon')} · ${esc(item.status)}</span>
-      </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="button" data-admin-action="approve" data-id="${item.id}">Approve</button>
-        <button class="button danger" data-admin-action="reject" data-id="${item.id}">Reject</button>
-      </div>
-    </div>
-  `).join('');
-
-  queue.querySelectorAll('[data-admin-action]').forEach((button) => {
-    button.onclick = async () => {
-      const action = button.dataset.adminAction;
-      const id = button.dataset.id;
-      await updateListingStatus(id, action === 'approve' ? 'approved' : 'rejected');
-    };
-  });
-}
-
 function guestRequiredModal() {
   open(`
     <h2>Account required</h2>
@@ -383,7 +321,7 @@ function accountPanel() {
   }
 
   const adminButton = isAdminUser()
-    ? '<button class="button" id="adminBtn" style="margin-top:12px">Admin Dashboard</button>'
+    ? '<a href="admin.html" class="button" style="display:inline-block;margin-top:12px; text-decoration:none;">Admin Dashboard</a>'
     : '';
 
   open(`
@@ -396,7 +334,6 @@ function accountPanel() {
   `);
 
   $('#logout').onclick = logout;
-  $('#adminBtn')?.addEventListener('click', adminDashboard);
 }
 
 function locationFields() {
