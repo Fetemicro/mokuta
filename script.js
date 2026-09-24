@@ -1,6 +1,5 @@
 const SUPABASE_URL = 'https://jgdvbsmyhrpnaqtbneug.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnZHZic215aHJwbmFxdGJuZXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMDY1NjAsImV4cCI6MjEwNTc4MjU2MH0.iGsuUaXGJo[REDACTED]';
-const STORAGE_BUCKET = 'listing-images';
+const SUPABASE_KEY = 'sb_publishable_VYW_Y-d8BItFm9A2QZ2Jwg_BHGN2Yos';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATEGORIES = {
@@ -241,6 +240,90 @@ async function checkSession() {
   user = session?.user || null;
   profile = user ? await fetchProfile(user.id) : null;
   translate();
+}
+
+async function updateListingStatus(id, nextStatus) {
+  const { error } = await db.from('listings').update({ status: nextStatus }).eq('id', id);
+  if (error) {
+    console.error(error);
+    toast(error.message || 'Could not update listing status.');
+    return;
+  }
+  toast(`Listing ${nextStatus}.`);
+  await loadListings();
+  await adminDashboard();
+}
+
+async function toggleFeatured(id, nextValue) {
+  const { error } = await db.from('listings').update({ is_featured: nextValue }).eq('id', id);
+  if (error) {
+    console.error(error);
+    toast(error.message || 'Could not update featured status.');
+    return;
+  }
+  toast(nextValue ? 'Listing marked as featured.' : 'Featured label removed.');
+  await loadListings();
+  await adminDashboard();
+}
+
+async function adminDashboard() {
+  if (!isAdminUser()) {
+    toast('Admin access required.');
+    return;
+  }
+
+  open(`
+    <h2>Admin dashboard</h2>
+    <p class="lead">Moderate product listings before they go live.</p>
+    <div id="adminQueue"></div>
+  `);
+
+  const queue = $('#adminQueue');
+  const { data, error } = await db.from('listings').select('*').order('created_at', { ascending: false });
+
+  if (error) {
+    console.error(error);
+    queue.innerHTML = empty('Could not load listings', 'Please refresh and try again.');
+    return;
+  }
+
+  const rows = data || [];
+
+  if (!rows.length) {
+    queue.innerHTML = empty('No listings yet', 'New submissions will appear here.');
+    return;
+  }
+
+  queue.innerHTML = rows.map((item) => `
+    <div class="admin-item" style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e5e7eb;align-items:center;">
+      <div style="min-width:0;">
+        <strong>${esc(item.title)}</strong><br>
+        <span style="font-size:12px;color:#667085;">${esc(item.category)} · ${esc(item.region || item.location || 'Cameroon')} · ${esc(item.status)}${item.is_featured ? ' · FEATURED' : ''}</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${item.status !== 'approved' ? `<button class="button" data-admin-action="approve" data-id="${esc(item.id)}">Approve</button>` : ''}
+        ${item.status !== 'rejected' ? `<button class="button danger" data-admin-action="reject" data-id="${esc(item.id)}">Reject</button>` : ''}
+        <button class="button" data-admin-action="${item.is_featured ? 'unfeature' : 'feature'}" data-id="${esc(item.id)}">${item.is_featured ? 'Unfeature' : 'Feature'}</button>
+      </div>
+    </div>
+  `).join('');
+
+  queue.querySelectorAll('[data-admin-action]').forEach((button) => {
+    button.onclick = async () => {
+      const action = button.dataset.adminAction;
+      const id = button.dataset.id;
+
+      if (action === 'approve') {
+        await updateListingStatus(id, 'approved');
+      } else if (action === 'reject') {
+        await updateListingStatus(id, 'rejected');
+      } else if (action === 'feature') {
+        await toggleFeatured(id, true);
+      } else if (action === 'unfeature') {
+        await toggleFeatured(id, false);
+      }
+    };
+  });
 }
 
 function guestRequiredModal() {
