@@ -6,23 +6,7 @@
   <title>MOKUTA — Find it. Sell it. Move forward.</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css">
-  <style>
-    .brand-text {
-      font-family: 'Manrope', sans-serif;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-      color: #fff;
-      font-size: 2.05rem;
-      line-height: 1;
-      text-decoration: none;
-      display: inline-block;
-    }
-    .brand-text.light { color: #fff; }
-    .header-logo, .footer-logo { display: none; }
-    @media (max-width: 760px) {
-      .brand-text { font-size: 1.5rem; }
-    }
-  </style>
+  <style>.brand-text{font-family:'Manrope',sans-serif;font-weight:800;letter-spacing:.5px;color:#fff;font-size:2.05rem;line-height:1;text-decoration:none;display:inline-block}.brand-text.light{color:#fff}.header-logo,.footer-logo{display:none}@media(max-width:760px){.brand-text{font-size:1.5rem}}</style>
 </head>
 <body>
 <header class="site-header"><div class="container nav"><a class="brand" href="#top" aria-label="MOKUTA home"><span class="brand-text">MOKUTA</span></a><nav class="desktop-nav"><a href="#browse" data-i18n="browse">Browse Listings</a><a href="#categories" data-i18n="categories">Categories</a></nav><div class="nav-actions"><select id="language" aria-label="Language"><option value="auto">Auto</option><option value="en">English</option><option value="fr">Français</option></select><button class="link-button" id="accountBtn">Login / Register</button><button class="button button-small" id="postBtn" data-i18n="post">Post Free Ad</button><button class="menu-toggle" id="menuToggle" aria-label="Menu">☰</button></div></div><div class="mobile-menu" id="mobileMenu"><a href="#browse" data-i18n="browse">Browse Listings</a><a href="#categories" data-i18n="categories">Categories</a></div></header>
@@ -38,4 +22,4 @@
 </main>
 <footer><div class="container footer-grid"><div><span class="brand-text light">MOKUTA</span><p data-i18n="footerDesc">A Cameroon-first marketplace for products, services, businesses and opportunities.</p></div><div><h4 data-i18n="useful">Useful links</h4><a href="#browse" data-i18n="browse">Browse Listings</a><a href="#categories" data-i18n="categories">Categories</a><a href="#" id="footerPost" data-i18n="post">Post Free Ad</a></div><div><h4 data-i18n="account">Account</h4><a href="#" id="footerAccount">Login / Register</a><a href="mailto:hello@mokuta.cm" data-i18n="contact">Contact</a></div><div><h4 data-i18n="legal">Legal</h4><a href="#" data-i18n="terms">Terms</a><a href="#" data-i18n="privacy">Privacy</a></div></div><div class="container copyright">© <span id="year"></span> MOKUTA. Connect. Trade. Move forward.</div></footer>
 <div class="modal-backdrop" id="modalBackdrop"><div class="modal" id="modal" role="dialog" aria-modal="true"><button class="modal-close" id="modalClose">×</button><div id="modalContent"></div></div></div><div class="toast" id="toast"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="script.js"></script></body></html>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script src="script.js"></script><script>window.mokutaDb=window.supabase.createClient('https://jgdvbsmyhrpnaqtbneug.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnZHZic215aHJwbmFxdGJneXZnIiwiaWF0IjoxNzkwMjA2NTYwLCJleHAiOjIxMDU3ODI1NjB9.iGsuUaXGJo');</script><script src="photo-upload.js"></script></body></html>
