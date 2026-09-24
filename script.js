@@ -1,5 +1,5 @@
 const SUPABASE_URL = 'https://jgdvbsmyhrpnaqtbneug.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnZHZic215aHJwbmFxdGJuZXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMDY1NjAsImV4cCI6MjEwNTc4MjU2MH0.iGsuUaXGJoQ5X9YJYEbYK4vWuEfblGktAYmnxnIyxa8';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnZHZic215aHJwbmFxdGJuZXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMDY1NjAsImV4cCI6MjEwNTc4MjU2MH0.iGsuUaXGJo[REDACTED]';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATEGORIES = {
@@ -28,7 +28,7 @@ const REGIONS = {
   'North-West': ['Boyo', 'Bui', 'Donga-Mantung', 'Menchum', 'Mezam', 'Momo', 'Ngoketunjia'],
   South: ['Dja-et-Lobo', 'Mvila', 'Océan', 'Vallée-du-Ntem'],
   'South-West': ['Fako', 'Koupé-Manengouba', 'Lebialem', 'Manyu', 'Meme', 'Ndian'],
-  West: ['Bamboutos', 'Haut-Nkam', 'Hauts-Plateaux', 'Koung-Khi', 'Menoua', 'Mifi', 'Ndé', 'Noun']
+  West: ['Bamboutos', 'Haut-Knam', 'Hauts-Plateaux', 'Koung-Khi', 'Menoua', 'Mifi', 'Ndé', 'Noun']
 };
 
 const T = {
@@ -217,6 +217,74 @@ async function checkSession() {
   translate();
 }
 
+function isAdminUser() {
+  if (!user) return false;
+  const roleFromMeta = user.app_metadata?.role || profile?.role;
+  return roleFromMeta === 'admin';
+}
+
+async function updateListingStatus(id, nextStatus) {
+  const { error } = await db.from('listings').update({ status: nextStatus }).eq('id', id);
+  if (error) {
+    console.error(error);
+    toast(error.message || 'Could not update listing status.');
+    return;
+  }
+  toast(`Listing ${nextStatus}.`);
+  await loadListings();
+  await adminDashboard();
+}
+
+async function adminDashboard() {
+  if (!isAdminUser()) {
+    toast('Admin access required.');
+    return;
+  }
+
+  open(`
+    <h2>Admin dashboard</h2>
+    <p class="lead">Moderate product listings before they go live.</p>
+    <div id="adminQueue"></div>
+  `);
+
+  const queue = $('#adminQueue');
+  const { data, error } = await db.from('listings').select('*').in('status', ['pending', 'rejected']).order('created_at', { ascending: false });
+
+  if (error) {
+    console.error(error);
+    queue.innerHTML = empty('Could not load listings', 'Please refresh and try again.');
+    return;
+  }
+
+  const rows = data || [];
+
+  if (!rows.length) {
+    queue.innerHTML = empty('No pending listings', 'New submissions will appear here.');
+    return;
+  }
+
+  queue.innerHTML = rows.map((item) => `
+    <div class="admin-item" style="display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e5e7eb;align-items:center;">
+      <div style="min-width:0;">
+        <strong>${esc(item.title)}</strong><br>
+        <span style="font-size:12px;color:#667085;">${esc(item.category)} · ${esc(item.region || item.location || 'Cameroon')} · ${esc(item.status)}</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="button" data-admin-action="approve" data-id="${item.id}">Approve</button>
+        <button class="button danger" data-admin-action="reject" data-id="${item.id}">Reject</button>
+      </div>
+    </div>
+  `).join('');
+
+  queue.querySelectorAll('[data-admin-action]').forEach((button) => {
+    button.onclick = async () => {
+      const action = button.dataset.adminAction;
+      const id = Number(button.dataset.id);
+      await updateListingStatus(id, action === 'approve' ? 'approved' : 'rejected');
+    };
+  });
+}
+
 function guestRequiredModal() {
   open(`
     <h2>Account required</h2>
@@ -314,15 +382,21 @@ function accountPanel() {
     return;
   }
 
+  const adminButton = isAdminUser()
+    ? '<button class="button" id="adminBtn" style="margin-top:12px">Admin Dashboard</button>'
+    : '';
+
   open(`
     <h2>Your account</h2>
     <p class="lead">${esc(profile?.full_name || user.email)}</p>
     <div class="notice">${esc(user.email)}<br>${esc(profile?.phone || '')}</div>
     <p class="muted">Your registered phone is used for seller contact and is never shown publicly on listings.</p>
     <button class="button danger" id="logout">Logout</button>
+    ${adminButton}
   `);
 
   $('#logout').onclick = logout;
+  $('#adminBtn')?.addEventListener('click', adminDashboard);
 }
 
 function locationFields() {
@@ -439,7 +513,7 @@ function detail(item) {
     <div class="detail-price">${price(item.price)}</div>
     <p class="muted">${esc(item.category)} · ${esc(item.subcategory)}<br>📍 ${esc(item.location)}, ${esc(item.region || 'Cameroon')}</p>
     <p>${esc(item.description)}</p>
-    ${user ? '<div class="contact-box"><strong>Seller contact is available to logged-in users.</strong><p class="muted">WhatsApp and chat will be enabled in the next production step.</p></div>' : '<div class="contact-box"><strong>Log in to view seller contact details.</strong><button class="button" id="detailLogin">Login / Register</button></div>'}
+    ${user ? '<div class="contact-box"><strong>Seller contact is available to logged-in users.</strong><p class="muted">WhatsApp and chat will be enabled in the next production step.</p></div>' : '<button class="button" id="detailLogin">Login to contact seller</button>'}
     <button class="button" style="background:#eef2f6;color:#334;margin-top:12px" id="reportBtn">Report Listing</button>
   `);
 
