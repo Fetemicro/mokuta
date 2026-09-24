@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">MOKUTA logo</title>
+  <desc id="desc">Blue rounded-square MOKUTA logo with a bold white M above the MOKUTA wordmark.</desc>
+  <defs>
+    <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1599f5"/>
+      <stop offset="0.48" stop-color="#0868ed"/>
+      <stop offset="1" stop-color="#082bb7"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="84" fill="url(#blue)"/>
+  <!-- Bold M monogram; the original bag handle has intentionally been removed. -->
+  <path fill="#fff" d="M113 241V111h42l45 67 45-67h42v130h-34v-83l-38 57h-30l-38-57v83z"/>
+  <text x="256" y="360" text-anchor="middle" fill="#fff" font-family="Arial,Helvetica,sans-serif" font-size="69" font-weight="800" letter-spacing="3">MOKUTA</text>
+</svg>
