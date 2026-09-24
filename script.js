@@ -1,5 +1,6 @@
 const SUPABASE_URL = 'https://jgdvbsmyhrpnaqtbneug.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnZHZic215aHJwbmFxdGJuZXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMDY1NjAsImV4cCI6MjEwNTc4MjU2MH0.iGsuUaXGJo[...]
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpnZHZic215aHJwbmFxdGJuZXVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAyMDY1NjAsImV4cCI6MjEwNTc4MjU2MH0.iGsuUaXGJo[REDACTED]';
+const STORAGE_BUCKET = 'listing-images';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CATEGORIES = {
@@ -99,14 +100,33 @@ function isAdminUser() {
   return role === 'admin';
 }
 
+function normalizeCameroonPhone(phone = '') {
+  const digits = String(phone).replace(/\D/g, '');
+  if (!digits) return '';
+  const withoutZero = digits.startsWith('0') ? digits.slice(1) : digits;
+  if (withoutZero.startsWith('237')) return `+${withoutZero}`;
+  return `+237${withoutZero}`;
+}
+
+function buildWhatsAppLink(phone = '') {
+  const normalized = normalizeCameroonPhone(phone);
+  if (!normalized) return '';
+  const digits = normalized.replace(/\D/g, '');
+  return `https://wa.me/${digits}`;
+}
+
 function empty(title, desc = '') {
   return `<div class="empty-state"><strong>${esc(title)}</strong><span>${esc(desc)}</span></div>`;
 }
 
 function card(item) {
+  const imageMarkup = item.photo_url
+    ? `<img class="card-image" src="${item.photo_url}" alt="${esc(item.title)}" style="width:100%;height:180px;object-fit:cover;display:block;">`
+    : '<div class="card-image">No photo added</div>';
+
   return `
     <article class="listing-card ${item.is_featured ? 'featured' : ''}" data-id="${item.id}">
-      <div class="card-image">No photo added</div>
+      ${imageMarkup}
       <div class="card-body">
         ${item.is_featured ? '<span class="badge">FEATURED</span>' : ''}
         <h3>${esc(item.title)}</h3>
@@ -360,6 +380,27 @@ function locationFields() {
   `;
 }
 
+async function uploadListingPhoto(file) {
+  if (!file) return null;
+
+  const folder = 'listings';
+  const safeName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+  const path = `${folder}/${safeName}`;
+
+  const { data: uploadData, error: uploadError } = await db.storage.from(STORAGE_BUCKET).upload(path, file, {
+    cacheControl: '3600',
+    upsert: false
+  });
+
+  if (uploadError) {
+    console.error(uploadError);
+    throw uploadError;
+  }
+
+  const publicUrl = db.storage.from(STORAGE_BUCKET).getPublicUrl(uploadData.path);
+  return publicUrl.data.publicUrl;
+}
+
 function postAd() {
   if (!user) {
     guestRequiredModal();
@@ -389,7 +430,7 @@ function postAd() {
       ${locationFields()}
       <div class="form-grid two">
         <div class="field"><label>Price (FCFA)</label><input name="price" type="number" min="0"></div>
-        <div class="field"><label>Photo (optional)</label><input name="photo" type="file" accept="image/*"></div>
+        <div class="field"><label>Photo (optional)</label><input id="listingPhoto" name="photo" type="file" accept="image/*"></div>
       </div>
       <div class="field"><label>Description</label><textarea name="description" required></textarea></div>
       <div class="notice">Your registered phone is used for contact and is not public.</div>
@@ -414,23 +455,32 @@ function postAd() {
   $('#postForm').onsubmit = async (event) => {
     event.preventDefault();
     const payload = Object.fromEntries(new FormData(event.target));
-
-    const insertData = {
-      seller_id: user.id,
-      title: payload.title,
-      category: payload.category,
-      subcategory: payload.subcategory,
-      region: payload.region,
-      department: payload.department,
-      subdivision: payload.subdivision,
-      location: payload.location,
-      price: payload.price ? Number(payload.price) : null,
-      description: payload.description,
-      status: 'pending',
-      is_featured: false
-    };
+    const file = $('#listingPhoto')?.files?.[0] || null;
 
     try {
+      let photoUrl = null;
+
+      if (file) {
+        toast('Uploading photo...');
+        photoUrl = await uploadListingPhoto(file);
+      }
+
+      const insertData = {
+        seller_id: user.id,
+        title: payload.title,
+        category: payload.category,
+        subcategory: payload.subcategory,
+        region: payload.region,
+        department: payload.department,
+        subdivision: payload.subdivision,
+        location: payload.location,
+        price: payload.price ? Number(payload.price) : null,
+        description: payload.description,
+        photo_url: photoUrl,
+        status: 'pending',
+        is_featured: false
+      };
+
       const { error } = await db.from('listings').insert(insertData);
       if (error) throw error;
       close();
@@ -443,14 +493,26 @@ function postAd() {
   };
 }
 
-function detail(item) {
+async function detail(item) {
   if (!item) return;
+
+  const seller = await fetchProfile(item.seller_id);
+  const sellerPhone = seller?.phone || profile?.phone || '';
+  const waLink = buildWhatsAppLink(sellerPhone);
+  const sellerName = seller?.full_name || 'Seller';
+  const imageHtml = item.photo_url
+    ? `<img src="${item.photo_url}" alt="${esc(item.title)}" style="max-width:100%;border-radius:10px;display:block;margin-bottom:12px;">`
+    : '';
+
   open(`
     <h2>${esc(item.title)}</h2>
+    ${imageHtml}
     <div class="detail-price">${price(item.price)}</div>
     <p class="muted">${esc(item.category)} · ${esc(item.subcategory)}<br>📍 ${esc(item.location)}, ${esc(item.region || 'Cameroon')}</p>
     <p>${esc(item.description)}</p>
-    ${user ? '<div class="contact-box"><strong>Seller contact is available to logged-in users.</strong><p class="muted">WhatsApp and chat will be enabled in the next production step.</p></div>' : '<button class="button" id="detailLogin">Login to contact seller</button>'}
+    ${user
+      ? `<div class="contact-box"><strong>Seller: ${esc(sellerName)}</strong><br><span>${esc(sellerPhone || 'Phone hidden')}</span><br>${waLink ? `<a href="${waLink}" target="_blank" rel="noreferrer" class="button" style="display:inline-block;margin-top:10px;text-decoration:none;">Chat on WhatsApp</a>` : '<span class="muted">WhatsApp unavailable for this seller.</span>'}</div>`
+      : '<button class="button" id="detailLogin">Login to contact seller</button>'}
     <button class="button" style="background:#eef2f6;color:#334;margin-top:12px" id="reportBtn">Report Listing</button>
   `);
 
