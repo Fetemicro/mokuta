@@ -279,7 +279,7 @@ async function adminDashboard() {
   queue.querySelectorAll('[data-admin-action]').forEach((button) => {
     button.onclick = async () => {
       const action = button.dataset.adminAction;
-      const id = Number(button.dataset.id);
+      const id = button.dataset.id;
       await updateListingStatus(id, action === 'approve' ? 'approved' : 'rejected');
     };
   });
