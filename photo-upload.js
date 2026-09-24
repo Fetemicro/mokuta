@@ -1,6 +1,6 @@
-/* Optional listing photo upload/display enhancement. Requires a public Supabase Storage bucket named listing-images and a photo_url column on listings. */
+/* Optional listing photo upload/display enhancement. Uses the same Supabase client as script.js. */
 (() => {
-  const client = window.mokutaDb;
+  const client = db;
   if (!client) return;
 
   const style = document.createElement('style');
