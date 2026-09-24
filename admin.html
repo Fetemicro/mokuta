@@ -7,7 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root{--navy:#0b1f3a;--gold:#e7b84b;--ink:#15263d;--muted:#65748a;--line:#dfe5ed;--bg:#f4f6f9;--red:#b42318;--green:#087443}
-    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px Arial,sans-serif}.wrap{width:min(1180px,calc(100% - 28px));margin:auto}.top{background:var(--navy);color:#fff;padding:18px 0}.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px}.brand{font-size:25px;font-weight:800;letter-spacing:.5px}.top small{color:#d7e0ed}.card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px #0b1f3a12}.main{padding:28px 0}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}.stats{display:flex;gap:10px;flex-wrap:wrap}.stat{padding:12px 16px;border:1px solid var(--line);border-radius:9px;background:#fff}.stat b{display:block;font-size:20px}.filters{display:flex;gap:8px;flex-wrap:wrap}.button,select{border:1px solid var(--line);border-radius:7px;padding:10px 13px;background:#fff;color:var(--ink);cursor:pointer}.button.primary{background:var(--navy);color:#fff;border-color:var(--navy)}.button.success{background:#e7f6ee;color:var(--green);border-color:#b7e2ca}.button.danger{background:#fff0ef;color:var(--red);border-color:#f3c2bd}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:850px}.table th,.table td{text-align:left;padding:14px 12px;border-bottom:1px solid var(--line);vertical-align:top}.table th{font-size:12px;text-transform:uppercase;color:var(--muted);background:#fafbfc}.status{display:inline-block;border-radius:99px;padding:4px 9px;font-size:12px;font-weight:700}.pending{background:#fff4d6;color:#865d00}.approved{background:#e7f6ee;color:var(--green)}.rejected{background:#fff0ef;color:var(--red)}.actions{display:flex;gap:6px;flex-wrap:wrap}.notice{padding:15px}.error{color:var(--red)}.hidden{display:none!important}@media(max-width:700px){.topbar{align-items:flex-start;flex-direction:column}}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px Arial,sans-serif}.wrap{width:min(1180px,calc(100% - 28px));margin:auto}.top{background:var(--navy);color:#fff;padding:18px 0}.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px}.brand{font-size:25px;font-weight:800;letter-spacing:.5px}.top small{color:#d7e0ed}.card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 24px #0b1f3a12}.main{padding:28px 0}.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}.stats{display:flex;gap:10px;flex-wrap:wrap}.stat{padding:12px 16px;border:1px solid var(--line);border-radius:9px;background:#fff}.stat b{display:block;font-size:20px}.filters{display:flex;gap:8px;flex-wrap:wrap}.button,select{border:1px solid var(--line);border-radius:7px;padding:10px 13px;background:#fff;color:var(--ink);cursor:pointer}.button.primary{background:var(--navy);color:#fff;border-color:var(--navy)}.button.success{background:#e7f6ee;color:var(--green);border-color:#b7e2ca}.button.danger{background:#fff0ef;color:var(--red);border-color:#f3c2bd}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:900px}.table th,.table td{text-align:left;padding:14px 12px;border-bottom:1px solid var(--line);vertical-align:top}.table th{font-size:12px;text-transform:uppercase;color:var(--muted);background:#fafbfc}.status{display:inline-block;border-radius:99px;padding:4px 9px;font-size:12px;font-weight:700}.pending{background:#fff4d6;color:#865d00}.approved{background:#e7f6ee;color:var(--green)}.rejected{background:#fff0ef;color:var(--red)}.featured{background:#fff5d9;color:#8a5b00}.tag{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#fff5d9;color:#8a5b00;margin-top:6px}.actions{display:flex;gap:6px;flex-wrap:wrap}.notice{padding:15px}.error{color:var(--red)}.hidden{display:none!important}@media(max-width:700px){.topbar{align-items:flex-start;flex-direction:column}}
   </style>
 </head>
 <body>
@@ -15,7 +15,7 @@
   <main class="wrap main">
     <section id="loading" class="card notice">Loading administrator dashboard…</section>
     <section id="app" class="hidden">
-      <div class="toolbar"><div><h1 style="margin:0 0 5px">Listing moderation</h1><div style="color:var(--muted)">Approve, reject, or delete marketplace listings.</div></div><div class="filters"><select id="filter"><option value="all">All listings</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select><button class="button primary" id="refresh">Refresh</button></div></div>
+      <div class="toolbar"><div><h1 style="margin:0 0 5px">Listing moderation</h1><div style="color:var(--muted)">Approve, reject, feature, or delete marketplace listings.</div></div><div class="filters"><select id="filter"><option value="all">All listings</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select><button class="button primary" id="refresh">Refresh</button></div></div>
       <div class="stats" style="margin-bottom:18px"><div class="stat"><b id="allCount">0</b><span>All</span></div><div class="stat"><b id="pendingCount">0</b><span>Pending</span></div><div class="stat"><b id="approvedCount">0</b><span>Approved</span></div><div class="stat"><b id="rejectedCount">0</b><span>Rejected</span></div></div>
       <section class="card table-wrap"><table class="table"><thead><tr><th>Listing</th><th>Seller</th><th>Location</th><th>Status</th><th>Actions</th></tr></thead><tbody id="rows"></tbody></table><div id="empty" class="notice hidden">No listings match this filter.</div></section>
     </section>
@@ -28,35 +28,77 @@
     let listings=[];
     const $=s=>document.querySelector(s);
     const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
-    function showMessage(text,error=false){$('#message').textContent=text;$('#message').classList.remove('hidden');$('#message').classList.toggle('error',error)}
+
+    function showMessage(text,error=false){
+      $('#message').textContent=text;
+      $('#message').classList.remove('hidden');
+      $('#message').classList.toggle('error',error);
+    }
+
     function counts(){
       $('#allCount').textContent=listings.length;
       $('#pendingCount').textContent=listings.filter(x=>x.status==='pending').length;
       $('#approvedCount').textContent=listings.filter(x=>x.status==='approved').length;
       $('#rejectedCount').textContent=listings.filter(x=>x.status==='rejected').length;
     }
+
     function render(){
-      counts(); const filter=$('#filter').value; const rows=listings.filter(x=>filter==='all'||x.status===filter); $('#empty').classList.toggle('hidden',rows.length>0);
-      $('#rows').innerHTML=rows.map(x=>`<tr><td><strong>${esc(x.title)}</strong><br><small>${esc(x.category||'')} · ${esc(x.subcategory||'')}</small><br><small>${esc(x.description||'').slice(0,120)}</small></td><td><small>${esc(x.seller_id)}</small></td><td>${esc(x.location||'')}<br><small>${esc(x.region||'')}</small></td><td><span class="status ${esc(x.status)}">${esc(x.status)}</span></td><td><div class="actions">${x.status!=='approved'?`<button class="button success" data-action="approved" data-id="${esc(x.id)}">Approve</button>`:''}${x.status!=='rejected'?`<button class="button danger" data-action="rejected" data-id="${esc(x.id)}">Reject</button>`:''}<button class="button danger" data-action="delete" data-id="${esc(x.id)}">Delete</button></div></td></tr>`).join('');
+      counts();
+      const filter=$('#filter').value;
+      const rows=listings.filter(x=>filter==='all'||x.status===filter);
+      $('#empty').classList.toggle('hidden',rows.length>0);
+      $('#rows').innerHTML=rows.map(x=>`<tr><td><strong>${esc(x.title)}</strong><br><small>${esc(x.category||'')} · ${esc(x.subcategory||'')}</small><br><small>${esc((x.description||'').slice(0,120))}</small>${x.is_featured?'<div class="tag">FEATURED</div>':''}</td><td><small>${esc(x.seller_id)}</small></td><td>${esc(x.location||'')}<br><small>${esc(x.region||'')}</small></td><td><span class="status ${esc(x.status)}">${esc(x.status)}</span></td><td><div class="actions">${x.status!=='approved'?`<button class="button success" data-action="approved" data-id="${esc(x.id)}">Approve</button>`:''}${x.status!=='rejected'?`<button class="button danger" data-action="rejected" data-id="${esc(x.id)}">Reject</button>`:''}<button class="button ${x.is_featured?'':'primary'}" data-action="${x.is_featured?'unfeature':'feature'}" data-id="${esc(x.id)}">${x.is_featured?'Unfeature':'Feature'}</button><button class="button danger" data-action="delete" data-id="${esc(x.id)}">Delete</button></div></td></tr>`).join('');
       document.querySelectorAll('[data-action]').forEach(b=>b.onclick=()=>changeListing(b.dataset.id,b.dataset.action));
     }
+
     async function load(){
-      $('#refresh').disabled=true; const {data,error}=await db.from('listings').select('*').order('created_at',{ascending:false}); $('#refresh').disabled=false;
-      if(error){showMessage(error.message,true);return} listings=data||[];$('#message').classList.add('hidden');render();
+      $('#refresh').disabled=true;
+      const {data,error}=await db.from('listings').select('*').order('created_at',{ascending:false});
+      $('#refresh').disabled=false;
+      if(error){showMessage(error.message,true);return}
+      listings=data||[];
+      $('#message').classList.add('hidden');
+      render();
     }
+
     async function changeListing(id,action){
       if(action==='delete'&&!confirm('Delete this listing permanently?'))return;
-      const result=action==='delete'?await db.from('listings').delete().eq('id',id):await db.from('listings').update({status:action}).eq('id',id);
-      if(result.error){showMessage(result.error.message,true);return} await load(); showMessage(action==='delete'?'Listing deleted':`Listing ${action}`);
+
+      const item = listings.find(x => x.id === id);
+      if(action==='feature' && (!item || item.status !== 'approved')){
+        showMessage('Approve this listing before placing it in the featured section.', true);
+        return;
+      }
+
+      let result;
+      if(action==='delete'){
+        result = await db.from('listings').delete().eq('id',id);
+      } else if(action==='feature' || action==='unfeature'){
+        result = await db.from('listings').update({ is_featured: action === 'feature' }).eq('id',id);
+      } else {
+        result = await db.from('listings').update({ status: action }).eq('id',id);
+      }
+
+      if(result.error){showMessage(result.error.message,true);return}
+      await load();
+      showMessage(action==='delete'?'Listing deleted': action==='feature' ? 'Listing marked featured' : action==='unfeature' ? 'Featured status removed' : `Listing ${action}`);
     }
+
     async function boot(){
       const {data:{session}}=await db.auth.getSession();
       if(!session){location.href='index.html';return}
       const role=session.user.app_metadata?.role;
       if(role!=='admin'){showMessage('Administrator access required.',true);$('#loading').classList.add('hidden');return}
-      $('#identity').textContent=session.user.email;$('#loading').classList.add('hidden');$('#app').classList.remove('hidden');await load();
+      $('#identity').textContent=session.user.email;
+      $('#loading').classList.add('hidden');
+      $('#app').classList.remove('hidden');
+      await load();
     }
-    $('#filter').onchange=render;$('#refresh').onclick=load;$('#logout').onclick=async()=>{await db.auth.signOut();location.href='index.html'};boot();
+
+    $('#filter').onchange=render;
+    $('#refresh').onclick=load;
+    $('#logout').onclick=async()=>{await db.auth.signOut();location.href='index.html'};
+    boot();
   </script>
 </body>
 </html>
