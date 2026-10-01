@@ -1,0 +1,16 @@
+{
+  "name": "mokuta",
+  "version": "1.0.0",
+  "description": "MOKUTA - Cameroon's multi-vendor marketplace",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx http-server -p 8080 -c-1",
+    "deploy": "git push origin main"
+  },
+  "keywords": ["marketplace", "cameroon", "ecommerce"],
+  "author": "MOKUTA Team",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
