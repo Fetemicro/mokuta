@@ -94,47 +94,26 @@ const close = () => $('#modalBackdrop').classList.remove('open');
 
 const price = (value) => value ? `${new Intl.NumberFormat('fr-FR').format(Number(value))} FCFA` : 'Price on request';
 
-// ============================================================================
-// MESSAGING SYSTEM FUNCTIONS
-// ============================================================================
-
-async function ensureConversation(sellerId, listingId) {
-  if (!user) {
-    auth('login');
-    return null;
+const PREMIUM_PLANS = {
+  boost: {
+    name: 'Boost',
+    price: 5000,
+    days: 7,
+    badge: 'Featured for 7 days'
+  },
+  growth: {
+    name: 'Growth',
+    price: 15000,
+    days: 30,
+    badge: 'Featured for 30 days + top search placement'
+  },
+  elite: {
+    name: 'Elite',
+    price: 30000,
+    days: 60,
+    badge: 'Featured for 60 days + priority exposure'
   }
-
-  const { data, error } = await db
-    .from('conversations')
-    .upsert({
-      buyer_id: user.id,
-      seller_id: sellerId,
-      listing_id: listingId
-    }, {
-      onConflict: 'buyer_id,seller_id,listing_id'
-    })
-    .select()
-    .single();
-
-  if (error) {
-    console.error(error);
-    toast('Could not start conversation.');
-    return null;
-  }
-
-  return data;
-}
-
-async function startMessageFlow(sellerId, listingId) {
-  const conversation = await ensureConversation(sellerId, listingId);
-  if (!conversation) return;
-
-  window.location.href = `messages.html?conversation=${conversation.id}&seller=${sellerId}`;
-}
-
-// ============================================================================
-// END MESSAGING FUNCTIONS
-// ============================================================================
+};
 
 function isAdminUser() {
   if (!user) return false;
@@ -255,6 +234,9 @@ function renderListings() {
   $('#liveCount').textContent = sortedVisible.length;
   $('#sellerCount').textContent = new Set(sortedVisible.map((item) => item.seller_id)).size;
   $('#regionCount').textContent = new Set(sortedVisible.map((item) => item.region).filter(Boolean)).size;
+  $('#liveCountDisplay').textContent = sortedVisible.length;
+  $('#sellerCountDisplay').textContent = new Set(sortedVisible.map((item) => item.seller_id)).size;
+  $('#regionCountDisplay').textContent = new Set(sortedVisible.map((item) => item.region).filter(Boolean)).size;
 }
 
 async function fetchProfile(userId) {
@@ -704,22 +686,95 @@ async function detail(item) {
     <p class="muted">${esc(item.category)} · ${esc(item.subcategory)}<br>📍 ${esc(item.location)}, ${esc(item.region || 'Cameroon')}</p>
     <p>${esc(item.description)}</p>
     ${user
-      ? `<div class="contact-box">
-          <strong>Seller: ${esc(sellerName)}</strong><br>
-          <span>${esc(sellerPhone || 'Phone hidden')}</span><br>
-          ${waLink ? `<a href="${waLink}" target="_blank" rel="noopener" class="button" style="display:inline-block;margin-top:8px;">WhatsApp Seller</a>` : ''}
-          <button class="button" id="messageSellerBtn" style="margin-top:8px;">💬 Message Seller</button>
-        </div>`
+      ? `<div class="contact-box"><strong>Seller: ${esc(sellerName)}</strong><br><span>${esc(sellerPhone || 'Phone hidden')}</span><br>${waLink ? `<a href="${waLink}" target="_blank" rel="noopener" class="button" style="display:inline-block;margin-top:8px;">WhatsApp Seller</a>` : ''}<button class="button" id="messageSellerBtn" style="margin-top:8px;">💬 Message Seller</button></div>`
       : '<button class="button" id="detailLogin">Login to contact seller</button>'}
     <button class="button" style="background:#eef2f6;color:#334;margin-top:12px" id="reportBtn">Report Listing</button>
   `);
 
   $('#detailLogin')?.addEventListener('click', () => auth('login'));
+  $('#reportBtn')?.addEventListener('click', () => toast('Thank you. This listing has been flagged for review.'));
   $('#messageSellerBtn')?.addEventListener('click', async () => {
     if (!item.seller_id) return;
-    await startMessageFlow(item.seller_id, item.id);
+    const conversation = await ensureConversation(item.seller_id, item.id);
+    if (conversation) {
+      window.location.href = `messages.html?conversation=${conversation.id}&seller=${item.seller_id}`;
+    }
   });
-  $('#reportBtn')?.addEventListener('click', () => toast('Thank you. This listing has been flagged for review.'));
+}
+
+async function ensureConversation(sellerId, listingId) {
+  if (!user) {
+    auth('login');
+    return null;
+  }
+
+  const { data, error } = await db
+    .from('conversations')
+    .upsert({
+      buyer_id: user.id,
+      seller_id: sellerId,
+      listing_id: listingId
+    }, {
+      onConflict: 'buyer_id,seller_id,listing_id'
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error(error);
+    toast('Could not start conversation.');
+    return null;
+  }
+
+  return data;
+}
+
+function openPremiumModal(planKey = 'growth') {
+  const plan = PREMIUM_PLANS[planKey];
+  if (!plan) return;
+
+  open(`
+    <h2>Upgrade your listing</h2>
+    <p class="lead">Choose a premium plan to increase visibility.</p>
+
+    <div class="premium-plan-summary">
+      <strong>${plan.name}</strong>
+      <div class="price-row">
+        <strong>${new Intl.NumberFormat('fr-FR').format(plan.price)}</strong>
+        <span>FCFA</span>
+      </div>
+      <p>${plan.badge}</p>
+    </div>
+
+    <div class="form-grid">
+      <button class="button" id="payPremiumBtn">Pay with MTN Mobile Money</button>
+      <button class="button" id="payOrangeBtn" style="background:#0b1f3a;color:white;">Pay with Orange Money</button>
+    </div>
+
+    <p class="muted">After payment, send the receipt to admin and your listing will be marked as premium.</p>
+  `);
+
+  $('#payPremiumBtn').onclick = () => {
+    toast('MTN Mobile Money payment flow selected.');
+    close();
+  };
+
+  $('#payOrangeBtn').onclick = () => {
+    toast('Orange Money payment flow selected.');
+    close();
+  };
+}
+
+function bindPremiumButtons() {
+  document.querySelectorAll('.plan-button').forEach((button) => {
+    button.onclick = () => {
+      if (!user) {
+        auth('login');
+        return;
+      }
+      openPremiumModal(button.dataset.plan);
+    };
+  });
 }
 
 function initFilters() {
@@ -786,6 +841,7 @@ async function boot() {
   initFilters();
   renderCategories();
   bindEvents();
+  bindPremiumButtons();
   translate();
   await checkSession();
   await loadListings();
