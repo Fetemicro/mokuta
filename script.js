@@ -94,6 +94,48 @@ const close = () => $('#modalBackdrop').classList.remove('open');
 
 const price = (value) => value ? `${new Intl.NumberFormat('fr-FR').format(Number(value))} FCFA` : 'Price on request';
 
+// ============================================================================
+// MESSAGING SYSTEM FUNCTIONS
+// ============================================================================
+
+async function ensureConversation(sellerId, listingId) {
+  if (!user) {
+    auth('login');
+    return null;
+  }
+
+  const { data, error } = await db
+    .from('conversations')
+    .upsert({
+      buyer_id: user.id,
+      seller_id: sellerId,
+      listing_id: listingId
+    }, {
+      onConflict: 'buyer_id,seller_id,listing_id'
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error(error);
+    toast('Could not start conversation.');
+    return null;
+  }
+
+  return data;
+}
+
+async function startMessageFlow(sellerId, listingId) {
+  const conversation = await ensureConversation(sellerId, listingId);
+  if (!conversation) return;
+
+  window.location.href = `messages.html?conversation=${conversation.id}&seller=${sellerId}`;
+}
+
+// ============================================================================
+// END MESSAGING FUNCTIONS
+// ============================================================================
+
 function isAdminUser() {
   if (!user) return false;
   const role = user.app_metadata?.role || profile?.role;
@@ -662,12 +704,21 @@ async function detail(item) {
     <p class="muted">${esc(item.category)} · ${esc(item.subcategory)}<br>📍 ${esc(item.location)}, ${esc(item.region || 'Cameroon')}</p>
     <p>${esc(item.description)}</p>
     ${user
-      ? `<div class="contact-box"><strong>Seller: ${esc(sellerName)}</strong><br><span>${esc(sellerPhone || 'Phone hidden')}</span><br>${waLink ? `<a href="${waLink}" target="_blank" rel="noreferrer" class="button" style="display:inline-block;margin-top:10px;text-decoration:none;">Chat on WhatsApp</a>` : '<span class="muted">WhatsApp unavailable for this seller.</span>'}</div>`
+      ? `<div class="contact-box">
+          <strong>Seller: ${esc(sellerName)}</strong><br>
+          <span>${esc(sellerPhone || 'Phone hidden')}</span><br>
+          ${waLink ? `<a href="${waLink}" target="_blank" rel="noopener" class="button" style="display:inline-block;margin-top:8px;">WhatsApp Seller</a>` : ''}
+          <button class="button" id="messageSellerBtn" style="margin-top:8px;">💬 Message Seller</button>
+        </div>`
       : '<button class="button" id="detailLogin">Login to contact seller</button>'}
     <button class="button" style="background:#eef2f6;color:#334;margin-top:12px" id="reportBtn">Report Listing</button>
   `);
 
   $('#detailLogin')?.addEventListener('click', () => auth('login'));
+  $('#messageSellerBtn')?.addEventListener('click', async () => {
+    if (!item.seller_id) return;
+    await startMessageFlow(item.seller_id, item.id);
+  });
   $('#reportBtn')?.addEventListener('click', () => toast('Thank you. This listing has been flagged for review.'));
 }
 
